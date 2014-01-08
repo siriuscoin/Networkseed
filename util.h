@@ -7,6 +7,8 @@
 #include <stdarg.h>
 
 #include "uint256.h"
+#include "sph_keccak.h"
+#include "sph_types.h"
 
 #define loop                for (;;)
 #define BEGIN(a)            ((char*)&(a))
@@ -62,7 +64,8 @@ public:
 #define SHARED_CRITICAL_BLOCK(cs)     \
     if (CCriticalBlock criticalblock = CCriticalBlock(cs, true))
 
-template<typename T1> inline uint256 Hash(const T1 pbegin, const T1 pend)
+template<typename T1>
+inline uint256 HashSHA2(const T1 pbegin, const T1 pend)
 {
     static unsigned char pblank[1];
     uint256 hash1;
@@ -70,6 +73,18 @@ template<typename T1> inline uint256 Hash(const T1 pbegin, const T1 pend)
     uint256 hash2;
     SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
     return hash2;
+}
+
+template<typename T1>
+inline uint256 HashSHA3(const T1 pbegin, const T1 pend)
+{
+    sph_keccak256_context ctx_keccak;
+    static unsigned char pblank[1];
+    uint256 hash1;
+    sph_keccak256_init(&ctx_keccak);
+    sph_keccak256 (&ctx_keccak, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
+    sph_keccak256_close(&ctx_keccak, static_cast<void*>(&hash1));
+    return hash1;
 }
 
 void static inline Sleep(int nMilliSec) {
